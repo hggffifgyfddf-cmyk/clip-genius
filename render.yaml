@@ -1,0 +1,25 @@
+services:
+  - type: worker
+    name: clipgenius-worker
+    runtime: node
+    repo: https://github.com/hggffifgyfddf-cmyk/clip-genius
+    branch: main
+    buildCommand: |
+      apt-get update
+      apt-get install -y ffmpeg python3 python3-pip
+      pip install yt-dlp
+      npm install
+    startCommand: node worker/index.js
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ENABLE_TRAINING
+        value: true
+      - key: MAX_CONCURRENT_JOBS
+        value: 10

@@ -495,6 +495,21 @@ export default function ClipGenius() {
     const [transactions, setTransactions] = useState([]);
     const [loadingCredits, setLoadingCredits] = useState(false);
 
+    // ====== STEP TRACKER STATE ======
+    const [currentStep, setCurrentStep] = useState(0);
+    const [stepStatus, setStepStatus] = useState("");
+    const [elapsedTime, setElapsedTime] = useState(0);
+    const [estimatedTime, setEstimatedTime] = useState(0);
+    const [showTimeTracker, setShowTimeTracker] = useState(false);
+    const [processingStages, setProcessingStages] = useState([
+      { id: 0, label: "📤 Uploading video", status: "pending", description: "Preparing your video for AI analysis" },
+      { id: 1, label: "🎤 Analyzing audio & speech", status: "pending", description: "Detecting speech patterns and key moments" },
+      { id: 2, label: "🧠 Detecting viral moments", status: "pending", description: "AI scanning for high-engagement segments" },
+      { id: 3, label: "✂️ Cutting clips", status: "pending", description: "Creating optimized short clips from detected moments" },
+      { id: 4, label: "🎨 Adding subtitles & effects", status: "pending", description: "Applying subtitles and visual enhancements" },
+      { id: 5, label: "📦 Finalizing & exporting", status: "pending", description: "Rendering and preparing your clips for download" },
+    ]);
+
     // Feedback state
     const [feedbackText, setFeedbackText] = useState("");
     const [feedbackRating, setFeedbackRating] = useState(0);
@@ -586,6 +601,76 @@ export default function ClipGenius() {
       }
     }
 
+    // ====== TIME TRACKER ======
+    useEffect(() => {
+      let timeInterval;
+      if (showTimeTracker && creating) {
+        timeInterval = setInterval(() => {
+          setElapsedTime(prev => prev + 1);
+        }, 1000);
+      }
+      return () => clearInterval(timeInterval);
+    }, [showTimeTracker, creating]);
+
+    // ====== STEP PROGRESS SIMULATION ======
+    useEffect(() => {
+      if (!creating || !currentJobId) return;
+
+      // Reset stages when starting
+      if (currentStep === 0) {
+        setProcessingStages(prev => prev.map((s, i) => 
+          i === 0 ? { ...s, status: "active" } : { ...s, status: "pending" }
+        ));
+        setStepStatus("📤 Uploading video...");
+      }
+
+      // Simulate step progression with realistic timing (shows before clips are made)
+      const stepTimings = [
+        { step: 1, delay: 8000, status: "🎤 Analyzing audio & speech...", description: "Detecting speech patterns and key moments" },
+        { step: 2, delay: 15000, status: "🧠 Detecting viral moments...", description: "AI scanning for high-engagement segments" },
+        { step: 3, delay: 10000, status: "✂️ Cutting clips...", description: "Creating optimized short clips from detected moments" },
+        { step: 4, delay: 12000, status: "🎨 Adding subtitles & effects...", description: "Applying subtitles and visual enhancements" },
+        { step: 5, delay: 5000, status: "📦 Finalizing & exporting...", description: "Rendering and preparing your clips for download" },
+      ];
+
+      let totalDelay = 0;
+      const timers = [];
+
+      // Mark upload as complete (step 0)
+      setTimeout(() => {
+        setProcessingStages(prev => prev.map((s, i) => 
+          i === 0 ? { ...s, status: "complete" } : s
+        ));
+      }, 2000);
+
+      // Schedule each step
+      stepTimings.forEach(({ step, delay, status, description }) => {
+        totalDelay += delay;
+        const timer = setTimeout(() => {
+          setCurrentStep(step);
+          setStepStatus(status);
+          setProcessingStages(prev => prev.map((s, i) => 
+            i === step ? { ...s, status: "active", description: description } : 
+            i < step ? { ...s, status: "complete" } : s
+          ));
+          setEstimatedTime(Math.round((totalDelay / 1000) / 60 * 10) / 10);
+        }, totalDelay);
+        timers.push(timer);
+      });
+
+      // Final completion (all steps done)
+      const finalTimer = setTimeout(() => {
+        setProcessingStages(prev => prev.map(s => ({ ...s, status: "complete" })));
+        setCurrentStep(6);
+        setStepStatus("✅ Complete! Your clips are ready!");
+      }, totalDelay + 3000);
+
+      return () => {
+        timers.forEach(t => clearTimeout(t));
+        clearTimeout(finalTimer);
+      };
+    }, [creating, currentJobId]);
+
     // REAL-TIME + POLLING
     useEffect(() => {
       if (!currentJobId) return;
@@ -601,10 +686,14 @@ export default function ClipGenius() {
           setWorkerStatus("Complete!");
           setCreating(false);
           setShowFeedback(true);
+          // Mark all steps as complete
+          setProcessingStages(prev => prev.map(s => ({ ...s, status: "complete" })));
+          setStepStatus("✅ All clips generated successfully!");
           setTimeout(() => { 
             setWorkerProgress(0); 
             setCurrentJobId(null); 
             setWorkerStatus(""); 
+            setShowTimeTracker(false);
           }, 3000);
           loadJobs();
           loadCredits();
@@ -613,6 +702,7 @@ export default function ClipGenius() {
         if (job.status === 'failed') {
           setWorkerStatus("Failed!");
           setCreating(false);
+          setProcessingStages(prev => prev.map(s => ({ ...s, status: "error" })));
           alert("Job failed: " + job.error_message);
         }
       }
@@ -663,6 +753,169 @@ export default function ClipGenius() {
       }
     }, []);
 
+    // ====== RESET PROGRESS STEPS ======
+    function resetProcessingSteps() {
+      setCurrentStep(0);
+      setStepStatus("");
+      setElapsedTime(0);
+      setEstimatedTime(0);
+      setShowTimeTracker(false);
+      setProcessingStages([
+        { id: 0, label: "📤 Uploading video", status: "pending", description: "Preparing your video for AI analysis" },
+        { id: 1, label: "🎤 Analyzing audio & speech", status: "pending", description: "Detecting speech patterns and key moments" },
+        { id: 2, label: "🧠 Detecting viral moments", status: "pending", description: "AI scanning for high-engagement segments" },
+        { id: 3, label: "✂️ Cutting clips", status: "pending", description: "Creating optimized short clips from detected moments" },
+        { id: 4, label: "🎨 Adding subtitles & effects", status: "pending", description: "Applying subtitles and visual enhancements" },
+        { id: 5, label: "📦 Finalizing & exporting", status: "pending", description: "Rendering and preparing your clips for download" },
+      ]);
+    }
+
+    // ====== RENDER STEP PROGRESS ======
+    function renderStepProgress() {
+      return (
+        <div style={{ marginTop: 20 }}>
+          {/* Time Tracker */}
+          {showTimeTracker && (
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              padding: "12px 16px",
+              background: "rgba(139,92,246,0.1)",
+              borderRadius: 12,
+              marginBottom: 16,
+              border: "1px solid rgba(139,92,246,0.3)"
+            }}>
+              <div>
+                <span style={{ fontSize: 13, color: colors.textDim }}>⏱️ Elapsed: </span>
+                <span style={{ fontWeight: 700, color: "#fff" }}>
+                  {Math.floor(elapsedTime / 60)}m {elapsedTime % 60}s
+                </span>
+              </div>
+              <div>
+                <span style={{ fontSize: 13, color: colors.textDim }}>⏳ Est. remaining: </span>
+                <span style={{ fontWeight: 700, color: "#8b5cf6" }}>
+                  {estimatedTime > 0 ? `${estimatedTime}m` : "Calculating..."}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: "#22c55e" }}>
+                🔄 Keep this tab open
+              </div>
+            </div>
+          )}
+
+          {/* Step Status Text */}
+          {stepStatus && (
+            <div style={{ 
+              fontSize: 15, 
+              fontWeight: 600, 
+              color: "#8b5cf6",
+              marginBottom: 16,
+              padding: "8px 12px",
+              background: "rgba(139,92,246,0.08)",
+              borderRadius: 8,
+              border: "1px solid rgba(139,92,246,0.15)"
+            }}>
+              {stepStatus}
+            </div>
+          )}
+
+          {/* Step List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {processingStages.map((stage) => (
+              <div
+                key={stage.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  background: stage.status === "complete" ? "rgba(34,197,94,0.1)" :
+                             stage.status === "active" ? "rgba(139,92,246,0.15)" :
+                             stage.status === "error" ? "rgba(239,68,68,0.1)" :
+                             "rgba(255,255,255,0.03)",
+                  border: `1px solid ${
+                    stage.status === "complete" ? "rgba(34,197,94,0.3)" :
+                    stage.status === "active" ? "rgba(139,92,246,0.3)" :
+                    stage.status === "error" ? "rgba(239,68,68,0.3)" :
+                    "rgba(255,255,255,0.06)"
+                  }`,
+                  transition: "all 0.3s ease",
+                  opacity: stage.status === "pending" ? 0.5 : 1,
+                }}
+              >
+                {/* Status Icon */}
+                <div style={{ width: 28, fontSize: 18, flexShrink: 0 }}>
+                  {stage.status === "complete" && "✅"}
+                  {stage.status === "active" && "⏳"}
+                  {stage.status === "pending" && "⏸️"}
+                  {stage.status === "error" && "❌"}
+                </div>
+
+                {/* Step Label & Description */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    fontSize: 14, 
+                    fontWeight: stage.status === "active" ? 700 : 500,
+                    color: stage.status === "complete" ? "#22c55e" :
+                           stage.status === "active" ? "#8b5cf6" :
+                           stage.status === "error" ? "#ef4444" :
+                           colors.textDim
+                  }}>
+                    {stage.label}
+                  </div>
+                  <div style={{ 
+                    fontSize: 12, 
+                    color: colors.textDim,
+                    marginTop: 2
+                  }}>
+                    {stage.status === "complete" ? "✓ Done" :
+                     stage.status === "active" ? stage.description :
+                     stage.status === "error" ? "⚠️ Error" :
+                     stage.description}
+                  </div>
+                </div>
+
+                {/* Progress Dots */}
+                <div style={{ display: "flex", gap: 4 }}>
+                  {stage.status === "active" && (
+                    <>
+                      <span style={{ animation: "pulse 1s ease-in-out infinite" }}>●</span>
+                      <span style={{ animation: "pulse 1s ease-in-out infinite 0.3s" }}>●</span>
+                      <span style={{ animation: "pulse 1s ease-in-out infinite 0.6s" }}>●</span>
+                    </>
+                  )}
+                  {stage.status === "complete" && (
+                    <span style={{ color: "#22c55e" }}>●</span>
+                  )}
+                  {stage.status === "pending" && (
+                    <span style={{ color: "#444" }}>○</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Wait Time Message */}
+          {showTimeTracker && (
+            <div style={{ 
+              marginTop: 16, 
+              padding: "12px 16px",
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 10,
+              border: `1px solid ${colors.border}`,
+              textAlign: "center"
+            }}>
+              <p style={{ fontSize: 13, color: colors.textDim, margin: 0 }}>
+                ⏰ This process takes 5-10 minutes. Feel free to keep this tab open and relax! ☕
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     async function createJob() {
       if (!acceptTerms) {
         alert("You must confirm content ownership and accept Terms.");
@@ -677,6 +930,12 @@ export default function ClipGenius() {
         setShowBuyCredits(true);
         return;
       }
+
+      // Reset and start progress tracking
+      resetProcessingSteps();
+      setShowTimeTracker(true);
+      setElapsedTime(0);
+      setEstimatedTime(0);
 
       try {
         setCreating(true);
@@ -756,6 +1015,7 @@ export default function ClipGenius() {
         setWorkerProgress(0);
         setWorkerStatus("");
         setIsUploading(false);
+        setShowTimeTracker(false);
       }
     }
 
@@ -824,6 +1084,9 @@ export default function ClipGenius() {
               <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#22c55e", fontWeight: 500 }}>{workerStatus} - {Math.round(workerProgress)}%</div>
             </div>
           )}
+
+          {/* ====== STEP PROGRESS TRACKER ====== */}
+          {creating && renderStepProgress()}
 
           <div style={{ marginTop: 30 }}><Btn onClick={createJob} disabled={creating || credits < maxClips}>{creating ? "Processing..." : credits < maxClips ? `Need ${maxClips - credits} more credits` : "Generate Clips"}</Btn></div>
           {statusText && <div style={{ marginTop: 14, color: "#8b5cf6", fontWeight: 800 }}>{statusText}</div>}
