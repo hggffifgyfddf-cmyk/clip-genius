@@ -1,0 +1,10 @@
+[build]
+  [build.packages]
+    ffmpeg = "latest"
+    python = "3.11"
+    
+  [build.install]
+    - "pip install yt-dlp"
+    
+[start]
+  cmd = "node worker/index.js"

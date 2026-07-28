@@ -3,13 +3,11 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req) {
   try {
-    /* ---------- AUTH ---------- */
     const { userId } = await auth();
     if (!userId) {
       return Response.json({ error: "Not signed in" }, { status: 401 });
     }
 
-    /* ---------- BODY ---------- */
     const body = await req.json();
 
     const preset = body.preset || "viral";
@@ -17,18 +15,19 @@ export async function POST(req) {
     const clipLength = Number(body.clipLength || 18);
     const maxClips = Number(body.maxClips || 10);
     const videoPath = body.videoPath;
+    const youtubeUrl = body.youtubeUrl;  // ✅ ADD THIS
     
-    // Read subtitle settings from frontend
     const subtitle_on = body.subtitleOn !== undefined ? body.subtitleOn : true;
     const subtitle_color = body.subtitleColor || "white";
 
-    if (!videoPath) {
-      return Response.json({ error: "Missing videoPath" }, { status: 400 });
+    // ✅ Allow EITHER videoPath OR youtubeUrl
+    if (!videoPath && !youtubeUrl) {
+      return Response.json({ error: "Missing videoPath or youtubeUrl" }, { status: 400 });
     }
 
     const sb = supabaseAdmin();
 
-    /* ---------- CREATE JOB ---------- */
+    // ✅ Store youtube_url if provided
     const { data: job, error } = await sb
       .from("jobs")
       .insert([
@@ -39,7 +38,8 @@ export async function POST(req) {
           clip_length: clipLength,
           max_clips: maxClips,
           status: "queued",
-          video_path: videoPath,
+          video_path: videoPath || null,  // Can be null if YouTube
+          youtube_url: youtubeUrl || null,  // ✅ NEW FIELD - ADD THIS COLUMN
           subtitle_on: subtitle_on,
           subtitle_color: subtitle_color,
           clips_data: [],
@@ -58,10 +58,8 @@ export async function POST(req) {
 
     console.log("✅ JOB CREATED:", {
       id: job.id,
-      color: subtitle_color,
-      subtitles: subtitle_on ? "ON" : "OFF",
-      clips: maxClips,
-      length: clipLength
+      type: youtubeUrl ? "YOUTUBE" : "UPLOAD",
+      color: subtitle_color
     });
 
     return Response.json({ success: true, job });

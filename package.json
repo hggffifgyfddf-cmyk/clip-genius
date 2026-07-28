@@ -9,17 +9,23 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.37.1",
-    "@supabase/supabase-js": "^2.93.3",
+    "@clerk/nextjs": "^6.39.6",
+    "@paddle/paddle-node-sdk": "^3.6.1",
+    "@supabase/supabase-js": "^2.109.0",
     "dotenv": "^17.2.4",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "node-fetch": "^3.3.2",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+     "build": "apt-get update && apt-get install -y ffmpeg python3 python3-pip && pip install yt-dlp",
+    "start": "node worker/index.js",
+     "stripe": "^22.0.0"
   },
   "devDependencies": {
     "eslint": "^9",
     "eslint-config-next": "16.1.6"
   }
+  
+   
 }
