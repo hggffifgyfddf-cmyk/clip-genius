@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -17,15 +17,10 @@
     "next": "16.1.6",
     "node-fetch": "^3.3.2",
     "react": "19.2.3",
-    "react-dom": "19.2.3",
-     
-    
-     "stripe": "^22.0.0"
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "eslint": "^9",
     "eslint-config-next": "16.1.6"
   }
-  
-   
 }
