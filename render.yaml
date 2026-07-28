@@ -1,15 +1,10 @@
 services:
   - type: worker
     name: clipgenius-worker
-    runtime: node
+    runtime: docker
     repo: https://github.com/hggffifgyfddf-cmyk/clipgenius-worker
     branch: main
-    buildCommand: |
-      apt-get update
-      apt-get install -y ffmpeg python3 python3-pip
-      pip install yt-dlp
-      npm install
-    startCommand: node worker/index.js
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: SUPABASE_URL
         sync: false
