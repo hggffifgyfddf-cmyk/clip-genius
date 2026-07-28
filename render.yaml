@@ -2,7 +2,7 @@ services:
   - type: worker
     name: clipgenius-worker
     runtime: node
-    repo: https://github.com/hggffifgyfddf-cmyk/clip-genius
+    repo: https://github.com/hggffifgyfddf-cmyk/clipgenius-worker
     branch: main
     buildCommand: |
       apt-get update
